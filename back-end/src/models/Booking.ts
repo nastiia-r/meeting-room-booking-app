@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../utils/db';
+import { User } from './User';
 
 export class Booking extends Model {
   declare id: number;
@@ -8,6 +9,8 @@ export class Booking extends Model {
   declare startTime: Date;
   declare endTime: Date;
   declare description: string;
+  declare User?: typeof User;
+
 }
 
 Booking.init({
@@ -48,4 +51,9 @@ Booking.init({
   modelName: 'booking',
   tableName: 'bookings',
   timestamps: true
+});
+
+Booking.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'Organizer' 
 });

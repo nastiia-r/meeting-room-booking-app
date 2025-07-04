@@ -57,6 +57,21 @@ export async function getRoomById(id: number) {
   }
 }
 
+export const checkRoomAdmin = async (userId: number, roomId: number): Promise<boolean> => {
+  const response = await fetch(`${API_URL}/rooms/${roomId}/check-admin/${userId}`, {
+      headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+  });
+  
+  if (!response.ok) {
+      throw new Error('Failed to check admin status');
+  }
+  
+  const data = await response.json();
+  return data.isAdmin;
+};
+
 
 export async function updateRoom(
     id: number,

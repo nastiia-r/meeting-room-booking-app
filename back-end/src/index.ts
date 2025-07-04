@@ -6,7 +6,7 @@ import { User } from './models/User';
 import authRoutes from './routes/authRoutes';
 import roomRoutes from './routes/roomRoutes';
 import userRoutes from './routes/userRoutes';
-import { MeetingRoom} from './models/MeetingRoom';
+import { MeetingRoom } from './models/MeetingRoom';
 import { Booking } from './models/Booking';
 import { RoomUser } from './models/RoomUser';
 import { setupAssociations } from './utils/associations';
@@ -31,12 +31,12 @@ const start = async () => {
     await connectDB();
     setupAssociations();
 
-  await User.sync();
-  await MeetingRoom.sync();
-  await RoomUser.sync();
-  await Booking.sync();
+    await User.sync();
+    await MeetingRoom.sync();
+    await RoomUser.sync();
+    await Booking.sync(); 
 
-    
+
     app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
     });

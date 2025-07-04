@@ -22,7 +22,8 @@ export function setupAssociations() {
   
     RoomUser.belongsTo(User, {
       foreignKey: 'userId',
-      as: 'User'
+      // as: 'User'
+      as: 'RoomMembers'
     });
   
     RoomUser.belongsTo(MeetingRoom, {

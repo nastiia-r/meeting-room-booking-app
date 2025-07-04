@@ -51,12 +51,60 @@ export const createRoom = async (req: AuthenticatedRequest, res: Response) => {
   
 
 
+// export const getRoomById = async (req: Request, res: Response): Promise<void> => {
+//     try {
+//         const room = await MeetingRoom.findByPk(req.params.id, {
+//             include: [{
+//                 model: User,
+//                 through: { attributes: ['role'] },
+//                 attributes: ['id', 'name', 'email']
+//             }]
+//         });
+
+//         if (!room) {
+//             res.status(404).json({ message: 'Room not found' });
+//             return;
+//         }
+
+//         res.json(room);
+//     } catch (error) {
+//         console.error('Error in getRoomById:', error);
+//         res.status(500).json({ 
+//             message: 'Failed to fetch room',
+//             error: error instanceof Error ? error.message : 'Unknown error'
+//         });
+//     }
+// };
+
+// export const getRoomMeetings = async (req: Request, res: Response) => {
+//     try {
+//         const roomId = parseInt(req.params.roomId);
+//         const meetings = await Booking.findAll({
+//             where: { roomId },
+//             include: [{
+//                 model: User,
+//                 as: 'User',
+//                 attributes: ['id', 'name', 'email']
+//             }],
+//             order: [['startTime', 'ASC']]
+//         });
+        
+//         res.json(meetings);
+//     } catch (error) {
+//         res.status(500).json({ 
+//             message: 'Failed to fetch meetings',
+//             error: error instanceof Error ? error.message : 'Unknown error'
+//         });
+//     }
+// };
+
 export const getRoomById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const room = await MeetingRoom.findByPk(req.params.id, {
+        const roomId = parseInt(req.params.roomId);
+        const room = await MeetingRoom.findByPk(roomId, {
             include: [{
                 model: User,
-                through: { attributes: ['role'] },
+                as: 'Creator',
                 attributes: ['id', 'name', 'email']
             }]
         });
@@ -68,14 +116,59 @@ export const getRoomById = async (req: Request, res: Response): Promise<void> =>
 
         res.json(room);
     } catch (error) {
-        console.error('Error in getRoomById:', error);
-        res.status(500).json({ 
+        console.error('Error fetching room:', error);
+        res.status(500).json({
             message: 'Failed to fetch room',
             error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 };
 
+export const getRoomMeetings = async (req: Request, res: Response) => {
+    try {
+        const roomId = parseInt(req.params.roomId);
+        
+        const meetings = await Booking.findAll({
+            where: { roomId },
+            include: [{
+                model: User,
+                as: 'Organizer', 
+                attributes: ['id', 'name', 'email']
+            }],
+            order: [['startTime', 'ASC']]
+        });
+        
+        res.json(meetings);
+    } catch (error) {
+        console.error('Error fetching meetings:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch meetings',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
+
+export const checkRoomAdmin = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const roomId = parseInt(req.params.roomId);
+        const userId = parseInt(req.params.userId);
+        
+        const room = await MeetingRoom.findByPk(roomId);
+        if (!room) {
+            res.status(404).json({ message: 'Room not found' });
+            return;
+        }
+        
+        const isAdmin = room.createdBy === userId;
+        res.json({ isAdmin });
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        res.status(500).json({ 
+            message: 'Failed to check admin status',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
 
 
 export const deleteRoom = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
