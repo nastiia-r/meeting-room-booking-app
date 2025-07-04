@@ -57,70 +57,57 @@ export async function getRoomById(id: number) {
   }
 }
 
-export async function getUserRooms() {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/rooms/my`, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch user rooms");
-    }
-    return data as Room[];
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch user rooms");
-  }
-}
 
 export async function updateRoom(
-  id: number,
-  name: string,
-  description: string
-) {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/rooms/${id}`, {
-      method: "PUT",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, description }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to update room");
-    }
-    return data as Room;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update room");
-  }
-}
-
-export async function deleteRoom(id: number) {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/rooms/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
+    id: number,
+    name: string,
+    description: string
+  ) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/rooms/${id}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, description }),
+      });
+  
       const data = await response.json();
-      throw new Error(data.message || "Failed to delete room");
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update room");
+      }
+      return data as Room;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to update room");
     }
-    return true;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete room");
   }
+  
+  export async function deleteRoom(id: number): Promise<boolean> {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/rooms/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to delete room");
+        }
+        
+        return true;
+    } catch (error: any) {
+        console.error('Error deleting room:', error);
+        throw new Error(error.message || "Failed to delete room");
+    }
 }
+
+  
 
 export async function addUsersToRoom(
   roomId: number,

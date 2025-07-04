@@ -3,66 +3,53 @@ import { MeetingRoom } from '../models/MeetingRoom';
 import { RoomUser } from '../models/RoomUser';
 import { User } from '../models/User';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { Booking } from '../models/Booking';
+import { sequelize } from '../utils/db';
 
 interface RoomUserRequest {
   email: string;
   role: 'admin' | 'user';
 }
 
-export const createRoom = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+
+export const createRoom = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { name, description, users = [] } = req.body;
-        const userId = req.user?.id;
-
-        if (!userId) {
-            res.status(401).json({ message: 'Unauthorized' });
-            return;
-        }
-
-        const transaction = await MeetingRoom.sequelize?.transaction();
-
-        try {
-            const room = await MeetingRoom.create({
-                name,
-                description,
-                createdBy: userId
-            }, { transaction });
-
+      const { name, description, users } = req.body;
+      const userId = req.user?.id;
+      
+      const room = await MeetingRoom.create({
+        name,
+        description,
+        createdBy: userId
+      });
+      
+      await RoomUser.create({
+        roomId: room.id,
+        userId,
+        role: 'admin'
+      });
+      
+      if (users && users.length > 0) {
+        for (const user of users) {
+          const userToAdd = await User.findOne({ where: { email: user.email } });
+          if (userToAdd) {
             await RoomUser.create({
-                roomId: room.id,
-                userId,
-                role: 'admin'
-            }, { transaction });
-
-            for (const user of users as RoomUserRequest[]) {
-                const userToAdd = await User.findOne({ 
-                    where: { email: user.email },
-                    transaction
-                });
-                
-                if (userToAdd) {
-                    await RoomUser.create({
-                        roomId: room.id,
-                        userId: userToAdd.id,
-                        role: user.role
-                    }, { transaction });
-                }
-            }
-
-            await transaction?.commit();
-            res.status(201).json(room);
-        } catch (error) {
-            await transaction?.rollback();
-            throw error;
+              roomId: room.id,
+              userId: userToAdd.id,
+              role: user.role || 'user'
+            });
+          }
         }
+      }
+      
+      res.status(201).json(room);
     } catch (error) {
-        console.error('Error in createRoom:', error);
-        res.status(500).json({ 
-            message: 'Failed to create room',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
-};
+  };
+  
+  
+
 
 export const getRoomById = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -89,81 +76,11 @@ export const getRoomById = async (req: Request, res: Response): Promise<void> =>
     }
 };
 
-export const getUserRooms = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    try {
-        const userId = req.user?.id;
 
-        if (!userId) {
-            res.status(401).json({ message: 'Unauthorized' });
-            return;
-        }
-
-        const rooms = await MeetingRoom.findAll({
-            include: [{
-                model: User,
-                where: { id: userId },
-                through: { where: {} },
-                attributes: []
-            }]
-        });
-
-        res.json(rooms);
-    } catch (error) {
-        console.error('Error in getUserRooms:', error);
-        res.status(500).json({ 
-            message: 'Failed to fetch user rooms',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
-};
-
-export const updateRoom = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    try {
-        const { name, description } = req.body;
-        const roomId = req.params.id;
-        const userId = req.user?.id;
-
-        if (!userId) {
-            res.status(401).json({ message: 'Unauthorized' });
-            return;
-        }
-
-        const isAdmin = await RoomUser.findOne({
-            where: {
-                roomId,
-                userId,
-                role: 'admin'
-            }
-        });
-
-        if (!isAdmin) {
-            res.status(403).json({ message: 'Only room admin can update' });
-            return;
-        }
-
-        const [updated] = await MeetingRoom.update(
-            { name, description },
-            { where: { id: roomId } }
-        );
-
-        if (!updated) {
-            res.status(404).json({ message: 'Room not found' });
-            return;
-        }
-
-        res.json({ message: 'Room updated successfully' });
-    } catch (error) {
-        console.error('Error in updateRoom:', error);
-        res.status(500).json({ 
-            message: 'Failed to update room',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
-};
 
 export const deleteRoom = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const roomId = req.params.id;
+        const roomId = parseInt(req.params.id);
         const userId = req.user?.id;
 
         if (!userId) {
@@ -180,15 +97,32 @@ export const deleteRoom = async (req: AuthenticatedRequest, res: Response): Prom
         });
 
         if (!isAdmin) {
-            res.status(403).json({ message: 'Only room admin can delete' });
+            res.status(403).json({ message: 'Only room admin can delete this room' });
             return;
         }
 
-        await MeetingRoom.destroy({ where: { id: roomId } });
-        res.json({ message: 'Room deleted successfully' });
+        await sequelize.transaction(async (transaction) => {
+            await RoomUser.destroy({
+                where: { roomId },
+                transaction
+            });
+
+            await Booking.destroy({
+                where: { roomId },
+                transaction
+            });
+
+            await MeetingRoom.destroy({
+                where: { id: roomId },
+                transaction
+            });
+        });
+
+        res.json({ success: true, message: 'Room deleted successfully' });
     } catch (error) {
-        console.error('Error in deleteRoom:', error);
+        console.error('Error deleting room:', error);
         res.status(500).json({ 
+            success: false,
             message: 'Failed to delete room',
             error: error instanceof Error ? error.message : 'Unknown error'
         });

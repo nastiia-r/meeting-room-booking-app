@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { addUsersToRoom, createRoom } from "../services/roomService";
 import { getAllUsers, searchUsersByEmail } from "../services/userService";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface User {
     id: number;
@@ -9,6 +10,7 @@ interface User {
 }
 
 function AddRoomPage() {
+    const navigate = useNavigate();
     const [roomName, setRoomName] = useState("");
     const [description, setDescription] = useState("");
     const [users, setUsers] = useState<User[]>([]);
@@ -16,7 +18,7 @@ function AddRoomPage() {
     const [searchEmail, setSearchEmail] = useState('');
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-
+    const { userId } = useParams<{ userId: string }>();
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -73,6 +75,7 @@ function AddRoomPage() {
                 await addUsersToRoom(newRoom.id, selectedUsers);
               }
             alert(`Кімната "${newRoom.name}" успішно створена!`);
+            navigate(`/users/${userId}/rooms`);
             setRoomName('');
             setDescription('');
             setSelectedUsers([]);
@@ -87,12 +90,12 @@ function AddRoomPage() {
         <div>
             <h1>Add Room</h1>
             <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold mb-4">Створити нову кімнату</h2>
+                <h2 className="text-2xl font-bold mb-4">Create new room</h2>
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label className="block text-gray-700 mb-2" htmlFor="roomName">
-                            Назва кімнати*
+                            Room name*
                         </label>
                         <input
                             id="roomName"
@@ -119,7 +122,7 @@ function AddRoomPage() {
 
                     <div className="mb-4">
                         <label className="block text-gray-700 mb-2">
-                            Додати користувачів
+                                Add users
                         </label>
                         <input
                             type="text"
@@ -131,7 +134,7 @@ function AddRoomPage() {
 
                         <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
                             {filteredUsers.length === 0 ? (
-                                <p className="text-gray-500 p-2">Користувачів не знайдено</p>
+                                <p className="text-gray-500 p-2">Users not found</p>
                             ) : (
                                 filteredUsers.map(user => (
                                     <div key={user.id} className="flex items-center justify-between p-2 hover:bg-gray-50">
@@ -192,7 +195,7 @@ function AddRoomPage() {
                         className={`w-full py-2 px-4 rounded-lg text-white font-medium ${isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
                             }`}
                     >
-                        {isLoading ? 'Створення...' : 'Створити кімнату'}
+                        {isLoading ? 'Create...' : 'Create room'}
                     </button>
                 </form>
             </div>

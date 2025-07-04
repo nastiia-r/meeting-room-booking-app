@@ -1,4 +1,5 @@
 const API_URL = "http://localhost:5000/api";
+import type { Room } from "./roomService";
 
 interface UserResponse {
   id: number;
@@ -61,3 +62,32 @@ export const searchUsersByEmail = async (email: string): Promise<UserResponse[]>
     throw error;
   }
 };
+
+
+
+export const getUserRooms = async (userId: string): Promise<RoomWithRole[]> => {
+    const response = await fetch(`${API_URL}/users/${userId}/rooms`, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    });
+
+    const responseText = await response.text(); 
+    
+    try {
+        const data = JSON.parse(responseText); 
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to fetch user rooms');
+        }
+        return data;
+    } catch (e) {
+        console.error('Failed to parse response:', responseText);
+        throw new Error(`Server returned unexpected format: ${responseText.substring(0, 100)}`);
+    }
+};
+
+
+  export interface RoomWithRole extends Room {
+    role: 'admin' | 'user';
+  }

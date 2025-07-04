@@ -12,8 +12,8 @@ function App() {
 
       <Routes>
         <Route path="/" element={<VerificationPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/add-room" element={<AddRoomPage />} />
+        <Route path="/users/:userId/rooms" element={<HomePage />} />
+        <Route path="/:userId/add-room" element={<AddRoomPage />} />
       </Routes>
     </Router>
   );

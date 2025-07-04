@@ -1,7 +1,9 @@
 import React, { useState } from "react";
  import { login, register} from "../services/authService.ts"
+import { useNavigate } from "react-router-dom";
 
 export default function VerificationPage() {
+    const navigate = useNavigate();
     const [isLogin, setIsLogin] = useState(true);
     const [form, setForm] = useState({ name: "", email: "", password: "" });
 
@@ -9,17 +11,18 @@ export default function VerificationPage() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             let data;
             if (isLogin) {
                 data = await login(form.email, form.password);
                 localStorage.setItem("token", data.token);
-                window.location.href = "/home";
+                navigate(`/users/${data.user.id}/rooms`);
             } else {
                 data = await register(form.name, form.email, form.password);
-                window.location.href = "/home";
+                localStorage.setItem("token", data.token);
+                navigate(`/users/${data.user.id}/rooms`);
                 setForm({ name: "", email: "", password: "" });
             }
         } catch (err: any) {
